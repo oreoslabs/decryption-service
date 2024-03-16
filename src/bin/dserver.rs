@@ -27,4 +27,3 @@ async fn main() -> Result<()> {
     start_server(args.address, args.rest, &args.redis).await?;
     Ok(())
 }
-

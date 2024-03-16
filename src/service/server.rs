@@ -204,6 +204,7 @@ pub async fn task_result_handler(
     match completed_result {
         Ok(data) => {
             let data: DResponse = serde_json::from_str(&data).unwrap();
+            shared.seen.write().await.retain(|x| *x == task_id);
             Json(DResult::completed(data))
         }
         Err(_) => Json(DResult::running()),
