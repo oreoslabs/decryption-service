@@ -1,0 +1,34 @@
+[package]
+name = "decryption-service"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = { version = "0.7.3", features = ["macros"] }
+anyhow = "1"
+bytes = "1"
+futures = "0.3"
+ironfish_rust = { package = "ironfish", path = "./ironfish/ironfish-rust"}
+rayon = "1.6.1"
+r2d2_redis = "0.14.0"
+serde = { version = "1.0.89", default-features = false, features = [
+    "derive",
+    "alloc",
+] }
+serde_json = { version = "1.0.64", default-features = false, features = [
+    "alloc",
+] }
+tower = { version = "0.4.13", features = ["timeout"] }
+tower-http = { version = "0.5.0", features = ["cors"] }
+tokio-util = { version = "0.7.3", features = ["codec"] }
+log = "0.4.17"
+tokio = { version = "1.35.0", features = ["full"] }
+num_cpus = "1.16.0"
+clap = { version = "4.4.11", features = ["derive"] }
+env_logger = "0.10.0"
+ureq = { version = "2.9.1", features = ["json"] }
+gethostname = "0.4.3"
+hex = "0.4.3"
+thiserror = "1.0.40"
