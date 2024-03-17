@@ -103,14 +103,18 @@ impl WorkerPool {
     }
 }
 
-pub async fn handle_connection(worker_pool: Arc<WorkerPool>, stream: TcpStream) -> Result<()> {
+pub async fn handle_connection(
+    worker_pool: Arc<WorkerPool>,
+    stream: TcpStream,
+    name: Option<String>,
+) -> Result<()> {
     info!("connected to scheduler");
     let (r, w) = split(stream);
     let mut socket_w_handler = FramedWrite::new(w, DMessageCodec::default());
     let mut socket_r_handler = FramedRead::new(r, DMessageCodec::default());
     let (tx, mut rx) = mpsc::channel::<DMessage>(1024);
 
-    let worker_name = format!("{:?}", gethostname::gethostname());
+    let worker_name = name.unwrap_or(format!("{:?}", gethostname::gethostname()));
 
     // send to scheduler loop
     let (router, handler) = oneshot::channel();
@@ -182,7 +186,7 @@ pub async fn handle_connection(worker_pool: Arc<WorkerPool>, stream: TcpStream) 
     Ok(())
 }
 
-pub async fn start_worker(addr: SocketAddr) -> Result<()> {
+pub async fn start_worker(addr: SocketAddr, name: Option<String>) -> Result<()> {
     let thread_pool = rayon::ThreadPoolBuilder::new()
         .num_threads(num_cpus::get())
         .build()
@@ -197,7 +201,7 @@ pub async fn start_worker(addr: SocketAddr) -> Result<()> {
         loop {
             match TcpStream::connect(&addr).await {
                 Ok(stream) => {
-                    if let Err(e) = handle_connection(worker.clone(), stream).await {
+                    if let Err(e) = handle_connection(worker.clone(), stream, name.clone()).await {
                         error!("connection to scheduler interrupted: {:?}", e);
                     }
                     error!("handle_connection exited");
