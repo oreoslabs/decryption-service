@@ -103,9 +103,16 @@ impl Scheduler {
                                         match worker_name == register.name {
                                             true => {},
                                             false => {
-                                                let worker = ServerWorker::new(tx.clone());
+                                                let mut worker = ServerWorker::new(tx.clone());
                                                 worker_name = register.name;
                                                 info!("new worker: {}", worker_name.clone());
+                                                match worker_server.queue.write().await.pop() {
+                                                    Some(task) => {
+                                                        let _ = tx.send(task).await.unwrap();
+                                                        worker.status = 2;
+                                                    },
+                                                    None => {},
+                                                }
                                                 let _ = worker_server.workers.write().await.insert(worker_name.clone(), worker);
                                             }
                                         }
@@ -117,7 +124,7 @@ impl Scheduler {
                                         let _ = worker_server.db.write().await.set_str(&task_id, &serde_json::to_string(&response).unwrap(), EXPIRATION);
                                         match worker_server.queue.write().await.pop() {
                                             Some(task) => {
-                                                let _ = tx.clone().send(task).await.unwrap();
+                                                let _ = tx.send(task).await.unwrap();
                                             },
                                             None => worker_server.workers.write().await.get_mut(&worker_name).unwrap().status = 1,
                                         }
