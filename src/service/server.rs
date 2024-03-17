@@ -237,11 +237,13 @@ pub async fn start_server(tcp: SocketAddr, rest: SocketAddr, redis: &str) -> Res
     let status_update_handler = tokio::spawn(async move {
         let _ = router.send(());
         loop {
-            let workers = server_status.workers.read().await;
-            let workers: Vec<&String> = workers.keys().collect();
-            let pending_taskes = server_status.queue.read().await.len();
-            info!("online workers: {}, {:?}", workers.len(), workers);
-            info!("pending taskes in queue: {}", pending_taskes);
+            {
+                let workers = server_status.workers.read().await;
+                let workers: Vec<&String> = workers.keys().collect();
+                let pending_taskes = server_status.queue.read().await.len();
+                info!("online workers: {}, {:?}", workers.len(), workers);
+                info!("pending taskes in queue: {}", pending_taskes);
+            }
             sleep(Duration::from_secs(10)).await;
         }
     });
