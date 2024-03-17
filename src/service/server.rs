@@ -17,7 +17,7 @@ use tokio::{
         mpsc::{self, Sender},
         oneshot, RwLock,
     },
-    time::timeout,
+    time::{sleep, timeout},
 };
 use tokio_util::codec::{FramedRead, FramedWrite};
 use tower::{timeout::TimeoutLayer, ServiceBuilder};
@@ -232,10 +232,25 @@ pub async fn start_server(tcp: SocketAddr, rest: SocketAddr, redis: &str) -> Res
     });
     let _ = handler.await;
 
+    let server_status = server.clone();
+    let (router, handler) = oneshot::channel();
+    let status_update_handler = tokio::spawn(async move {
+        let _ = router.send(());
+        loop {
+            let workers = server_status.workers.read().await;
+            let workers: Vec<&String> = workers.keys().collect();
+            let pending_taskes = server_status.queue.read().await.len();
+            info!("online workers: {}, {:?}", workers.len(), workers);
+            info!("pending taskes in queue: {}", pending_taskes);
+            sleep(Duration::from_secs(10)).await;
+        }
+    });
+    let _ = handler.await;
+
     let rest_handler = tokio::spawn(async move {
         let _ = start_rest(server.clone(), rest).await;
     });
-    let _ = tokio::join!(proxy_handler, rest_handler);
+    let _ = tokio::join!(proxy_handler, rest_handler, status_update_handler);
     std::future::pending::<()>().await;
     Ok(())
 }
